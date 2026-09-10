@@ -1,9 +1,9 @@
-# Temperatura.py - VERSIÓN STREAMLIT (con botones de navegación)
+# Temperatura.py - VERSIÓN Siguairo  - STREAMLIT (con botones de navegación + AUTO-REFRESH 60s)
 # =========================================================
 # Adaptación del código de Colab para Streamlit.
 # Mantiene INTACTO el diseño de la gráfica.
 # Agrega logo SENAMHI + botones de navegación.
-# Auto-refresh cada 60 segundos.
+# AUTO-ACTUALIZACIÓN cada 60 segundos.
 # =========================================================
 
 import streamlit as st
@@ -17,8 +17,8 @@ import warnings
 import io
 import requests
 import base64
+import time
 from datetime import datetime, timedelta
-from streamlit_autorefresh import st_autorefresh
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -650,11 +650,6 @@ def main():
     st.markdown("---")
 
     # ============================================================
-    # AUTO-REFRESH CADA 60 SEGUNDOS
-    # ============================================================
-    st_autorefresh(interval=60 * 1000, key="auto_refresh_temp")
-
-    # ============================================================
     # CARGAR DATOS
     # ============================================================
     with st.spinner('🔄 Cargando datos desde Google Sheets...'):
@@ -714,6 +709,40 @@ def main():
             'scrollZoom': True,
             'responsive': True
         })
+
+    # ============================================================
+    # AUTO-REFRESH CADA 60 SEGUNDOS
+    # ============================================================
+    if 'ultima_actualizacion' not in st.session_state:
+        st.session_state.ultima_actualizacion = datetime.now()
+
+    # Placeholder para mostrar el estado de actualización
+    placeholder_refresh = st.empty()
+
+    ahora = datetime.now()
+    segundos_transcurridos = (ahora - st.session_state.ultima_actualizacion).total_seconds()
+    segundos_restantes = max(0, 60 - int(segundos_transcurridos))
+
+    placeholder_refresh.markdown(
+        f"""
+        <div style="text-align: center; color: #888; font-size: 11px; padding: 4px;">
+            🔄 Actualización automática en <b>{segundos_restantes}s</b> 
+            · Última: {st.session_state.ultima_actualizacion.strftime('%H:%M:%S')}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Espera 1 segundo y verifica si ya pasaron 60s
+    time.sleep(1)
+    if (datetime.now() - st.session_state.ultima_actualizacion).total_seconds() >= 60:
+        st.session_state.ultima_actualizacion = datetime.now()
+        # Limpiar caché para forzar recarga de datos desde Google Sheets
+        st.cache_data.clear()
+        st.rerun()
+    else:
+        # Rerun cada 1s solo para actualizar el contador visual
+        st.rerun()
 
 if __name__ == "__main__":
     main()

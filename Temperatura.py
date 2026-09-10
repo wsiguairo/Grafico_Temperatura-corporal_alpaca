@@ -1,9 +1,8 @@
-# Temperatura.py - VERSIÓN STREAMLIT (adaptación del código de Colab)
+# Temperatura.py - VERSIÓN STREAMLIT (con botones de navegación)
 # =========================================================
-# Código original de Google Colab adaptado para Streamlit.
-# Se mantiene INTACTO el diseño de la gráfica.
-# Único cambio visual: se agregó el logo SENAMHI.
-# CORREGIDO: TypeError en pd.to_numeric (columnas duplicadas)
+# Adaptación del código de Colab para Streamlit.
+# Mantiene INTACTO el diseño de la gráfica.
+# Agrega logo SENAMHI + botones de navegación como el original.
 # =========================================================
 
 import streamlit as st
@@ -19,7 +18,6 @@ import requests
 import base64
 from datetime import datetime, timedelta
 
-# Suprimir advertencias futuras
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # ============================================================
@@ -33,7 +31,7 @@ st.set_page_config(
 )
 
 # ============================================================
-# ESTILOS - LOGO SENAMHI
+# ESTILOS - LOGO SENAMHI + BOTONES
 # ============================================================
 st.markdown("""
 <style>
@@ -69,6 +67,32 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     
+    /* BOTONES DE NAVEGACIÓN */
+    .nav-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin: 10px 0 15px 0;
+        flex-wrap: wrap;
+    }
+    
+    /* ESTILO DE BOTONES DE STREAMLIT */
+    div[data-testid="stHorizontalBlock"] .stButton > button {
+        width: 100%;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 10px 16px;
+        transition: all 0.2s ease;
+    }
+    
+    /* Botón activo */
+    .btn-activo button {
+        background-color: #2c7fb8 !important;
+        color: white !important;
+        border-color: #2c7fb8 !important;
+    }
+    
     @media only screen and (max-width: 768px) {
         .logo-senamhi {
             width: 55px;
@@ -76,6 +100,10 @@ st.markdown("""
             left: 5px;
             padding: 3px;
             border-radius: 6px;
+        }
+        div[data-testid="stHorizontalBlock"] .stButton > button {
+            font-size: 12px;
+            padding: 8px 10px;
         }
     }
 </style>
@@ -107,9 +135,6 @@ def mostrar_logo_senamhi():
 URL_CORPORAL = 'https://docs.google.com/spreadsheets/d/1AktP7JsWWtndUpyug005IynsKGfhn-5O-qWowXwhqy4/edit?gid=2146945474#gid=2146945474'
 URL_CLIMA = 'https://docs.google.com/spreadsheets/d/1sftR-fLiB00xaA3HWZJocO4NI1daQ_24vYoiI3mNEuk/edit?gid=4165835#gid=4165835'
 
-# ============================================================
-# PARÁMETROS MANUALES DEL TÍTULO
-# ============================================================
 SHEET_NAME_CLIMA = 'Crucero_alto'
 DEPARTAMENTO = 'Puno'
 
@@ -185,14 +210,12 @@ legend_labels = {
 }
 
 # ============================================================
-# FUNCIÓN PRINCIPAL DE LA GRÁFICA
+# FUNCIÓN PRINCIPAL DE LA GRÁFICA (INTACTA)
 # ============================================================
 def create_interactive_plot(df, cols, title, filename, primary_cols_list, secondary_cols_list,
                             zona_nombre="", departamento=""):
-    # Crear figura con dos ejes Y
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-    # MAPA DE COLORES
     color_map = {
         "temp_min": "blue", "vel_viento": "orange", "precipitacion": "purple",
         "temp_cria_hembra": "darkorange", "temp_cria_macho": "green",
@@ -200,7 +223,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         "temp_adulto_macho": "green", "temp_adulto": "darkgreen"
     }
 
-    # Eje primario - Temperatura mínima
     for p in primary_cols_list:
         col_name = cols.get(p)
         if col_name and col_name in df.columns:
@@ -220,7 +242,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                     secondary_y=False
                 )
 
-    # Línea horizontal en y=0
     fig.add_hline(
         y=0,
         line_dash="dash",
@@ -231,7 +252,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         showlegend=False
     )
 
-    # Eje secundario - Temperatura corporal
     for s in secondary_cols_list:
         col_name = cols.get(s)
         if col_name and col_name in df.columns:
@@ -251,7 +271,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                     secondary_y=True
                 )
 
-    # SOMBRA DE RANGO NORMAL (37.0 - 38.9)
     fig.add_hrect(
         y0=37.0, y1=38.9,
         fillcolor="green",
@@ -262,9 +281,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         showlegend=True
     )
 
-    # ============================================================
-    # LÍNEAS VERTICALES - SOLO EN MESES CON DATOS REALES
-    # ============================================================
     if 'fecha' in df.columns and not df['fecha'].empty:
         columnas_para_verificar = []
         for col_list in [primary_cols_list, secondary_cols_list]:
@@ -286,7 +302,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
 
                 for clave_mes in sorted(meses_con_datos):
                     year, month = map(int, clave_mes.split('-'))
-
                     for day in [1, 10, 20]:
                         try:
                             fecha_linea = pd.Timestamp(year=year, month=month, day=day)
@@ -304,13 +319,9 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                         except:
                             pass
 
-    # ============================================================
-    # CONFIGURACIÓN DE ZOOM - 4 MESES CON EXTENSIÓN
-    # ============================================================
     if not df['fecha'].empty:
         fecha_mas_reciente = df['fecha'].max().normalize()
         fecha_actual = pd.Timestamp.now().normalize()
-
         tiene_datos_futuros = fecha_mas_reciente > fecha_actual
 
         if tiene_datos_futuros:
@@ -328,9 +339,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             fecha_inicio_zoom = df['fecha'].min()
             fecha_fin_zoom = df['fecha'].max()
 
-    # ============================================================
-    # TICKS
-    # ============================================================
     fecha_max_ticks = df['fecha'].max() + pd.DateOffset(months=1)
     fecha_min_ticks = df['fecha'].min()
 
@@ -341,7 +349,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
     ticktext = [f"{months_es[d.month - 1]} {d.year}" for d in date_range]
 
-    # CONFIGURAR EJES
     temp_min_col_name = cols.get("temp_min")
     if temp_min_col_name and temp_min_col_name in df.columns:
         datos_temp = df[temp_min_col_name].dropna()
@@ -385,7 +392,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             zeroline=False
         )
 
-    # Eje Y secundario
     fig.update_yaxes(
         title_text="Temperatura corporal (°C)",
         title_font=dict(size=20, color="black", family='DejaVu Sans'),
@@ -400,7 +406,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         side='right'
     )
 
-    # Configurar eje X
     fig.update_xaxes(
         tickvals=tickvals,
         ticktext=ticktext,
@@ -416,9 +421,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         title_font=dict(size=14, color="black")
     )
 
-    # ============================================================
-    # TÍTULO FINAL CON ZONA Y DEPARTAMENTO
-    # ============================================================
     sufijo_titulo = ""
     if zona_nombre:
         if departamento:
@@ -428,9 +430,6 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
 
     titulo_final = f"{title}{sufijo_titulo}"
 
-    # ============================================================
-    # CONFIGURACIÓN RESPONSIVE
-    # ============================================================
     fig.update_layout(
         title=dict(
             text=titulo_final,
@@ -487,17 +486,14 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
     return fig
 
 # ============================================================
-# CARGA Y PROCESAMIENTO DE DATOS (VERSIÓN CORREGIDA)
+# CARGA Y PROCESAMIENTO DE DATOS
 # ============================================================
 @st.cache_data(ttl=60)
 def cargar_y_procesar_datos():
-    # Leer las hojas
     df_clima = read_google_sheet(URL_CLIMA, sheet_name=SHEET_NAME_CLIMA)
     df_temp_corporal = read_google_sheet(URL_CORPORAL, sheet_name='grafX_corporal')
 
-    # ============================================================
-    # RENOMBRAR COLUMNAS - SOLO LA PRIMERA COINCIDENCIA
-    # ============================================================
+    # Renombrar columnas - solo primera coincidencia
     rename_clima = {}
     patrones_usados = set()
     for col in df_clima.columns:
@@ -535,24 +531,18 @@ def cargar_y_procesar_datos():
     if rename_corporal:
         df_temp_corporal = df_temp_corporal.rename(columns=rename_corporal)
 
-    # ============================================================
-    # ELIMINAR COLUMNAS DUPLICADAS
-    # ============================================================
+    # Eliminar duplicados
     df_clima = df_clima.loc[:, ~df_clima.columns.duplicated()]
     df_temp_corporal = df_temp_corporal.loc[:, ~df_temp_corporal.columns.duplicated()]
 
-    # ============================================================
-    # CONVERTIR FECHAS
-    # ============================================================
+    # Convertir fechas
     if 'fecha' in df_clima.columns:
         df_clima['fecha'] = df_clima['fecha'].apply(convertir_fecha_formato_especial)
 
     if 'fecha' in df_temp_corporal.columns:
         df_temp_corporal['fecha'] = df_temp_corporal['fecha'].apply(convertir_fecha_formato_especial)
 
-    # ============================================================
-    # CONVERTIR A NUMÉRICO (verificando que sea Serie)
-    # ============================================================
+    # Convertir a numérico
     for col in ['temperatura_minima', 'velocidad_viento', 'precipitacion']:
         if col in df_clima.columns:
             serie = df_clima[col]
@@ -567,26 +557,19 @@ def cargar_y_procesar_datos():
                 serie = serie.iloc[:, 0]
             df_temp_corporal[col] = pd.to_numeric(serie, errors='coerce')
 
-    # ============================================================
-    # CALCULAR PROMEDIOS
-    # ============================================================
+    # Calcular promedios
     if 'temp_cria_hembra' in df_temp_corporal.columns and 'temp_cria_macho' in df_temp_corporal.columns:
         df_temp_corporal['temp_cria'] = df_temp_corporal[['temp_cria_hembra', 'temp_cria_macho']].mean(axis=1)
 
     if 'temp_adulto_hembra' in df_temp_corporal.columns and 'temp_adulto_macho' in df_temp_corporal.columns:
         df_temp_corporal['temp_adulto'] = df_temp_corporal[['temp_adulto_hembra', 'temp_adulto_macho']].mean(axis=1)
 
-    # ============================================================
-    # UNIR DATAFRAMES
-    # ============================================================
+    # Unir
     combined_df = pd.merge(df_clima, df_temp_corporal, on='fecha', how='outer')
     combined_df.sort_values(by='fecha', inplace=True)
     combined_df.drop_duplicates(subset=['fecha'], inplace=True)
     combined_df = combined_df[combined_df['fecha'].notna()]
 
-    # ============================================================
-    # DETECTAR COLUMNAS
-    # ============================================================
     def detect_cols(df):
         cols = {}
         cols["temp_min"] = next((c for c in df.columns if 'temperatura_minima' in c), None)
@@ -616,20 +599,51 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # Navegación entre las 3 gráficas
-    with st.sidebar:
-        st.markdown("### 📊 Gráficas")
-        grafica_opcion = st.radio(
-            "Seleccionar gráfica:",
-            options=[
-                "📊 Gráfica 1: Crías machos y hembras",
-                "📈 Gráfica 2: Adultos machos y hembras",
-                "📉 Gráfica 3: Crías y adultos"
-            ],
-            index=0
-        )
+    # ============================================================
+    # BOTONES DE NAVEGACIÓN (como el original)
+    # ============================================================
+    if 'grafica_seleccionada' not in st.session_state:
+        st.session_state.grafica_seleccionada = 1
 
-    # Cargar datos
+    st.markdown("### 📊 Seleccionar gráfica:")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button(
+            "📊 Gráfica 1\nCrías machos y hembras",
+            use_container_width=True,
+            type="primary" if st.session_state.grafica_seleccionada == 1 else "secondary",
+            key="btn_g1"
+        ):
+            st.session_state.grafica_seleccionada = 1
+            st.rerun()
+
+    with col2:
+        if st.button(
+            "📈 Gráfica 2\nAdultos machos y hembras",
+            use_container_width=True,
+            type="primary" if st.session_state.grafica_seleccionada == 2 else "secondary",
+            key="btn_g2"
+        ):
+            st.session_state.grafica_seleccionada = 2
+            st.rerun()
+
+    with col3:
+        if st.button(
+            "📉 Gráfica 3\nCrías y adultos",
+            use_container_width=True,
+            type="primary" if st.session_state.grafica_seleccionada == 3 else "secondary",
+            key="btn_g3"
+        ):
+            st.session_state.grafica_seleccionada = 3
+            st.rerun()
+
+    st.markdown("---")
+
+    # ============================================================
+    # CARGAR DATOS
+    # ============================================================
     with st.spinner('🔄 Cargando datos desde Google Sheets...'):
         combined_df, cols = cargar_y_procesar_datos()
 
@@ -637,12 +651,13 @@ def main():
         st.error("❌ No hay datos para generar gráficos. Verifica las hojas de Google Sheets.")
         return
 
-    # Zona y departamento
     zona_nombre = SHEET_NAME_CLIMA.replace('_', ' ').title()
 
-    # Generar gráfica según selección
+    # ============================================================
+    # GENERAR GRÁFICA SEGÚN SELECCIÓN
+    # ============================================================
     with st.spinner('📊 Generando gráfica interactiva...'):
-        if "Gráfica 1" in grafica_opcion:
+        if st.session_state.grafica_seleccionada == 1:
             fig = create_interactive_plot(
                 df=combined_df,
                 cols=cols,
@@ -653,7 +668,7 @@ def main():
                 zona_nombre=zona_nombre,
                 departamento=DEPARTAMENTO
             )
-        elif "Gráfica 2" in grafica_opcion:
+        elif st.session_state.grafica_seleccionada == 2:
             fig = create_interactive_plot(
                 df=combined_df,
                 cols=cols,
@@ -676,7 +691,9 @@ def main():
                 departamento=DEPARTAMENTO
             )
 
-    # Visualizar gráfica
+    # ============================================================
+    # VISUALIZAR GRÁFICA
+    # ============================================================
     if fig is not None:
         st.plotly_chart(fig, use_container_width=True, config={
             'displayModeBar': True,

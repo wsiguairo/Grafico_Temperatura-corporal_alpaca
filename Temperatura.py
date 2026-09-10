@@ -30,7 +30,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============================================================
 # ESTILOS - LOGO SENAMHI + BOTONES + TÍTULO PEQUEÑO
 # ============================================================
 st.markdown("""
@@ -86,10 +85,20 @@ st.markdown("""
         transition: all 0.2s ease;
         line-height: 1.3;
         
-        /* CAMBIO A PLOMO CLARO DIRECTO (REEMPLAZA AL ROJO) */
-        background-color: #D1D5DB !important; /* Plomo claro mate */
-        color: #1F2937 !important;            /* Texto oscuro para buen contraste */
-        border: 1px solid #9CA3AF !important; /* Borde plomo sutil */
+        /* BOTÓN TRANSPARENTE CON BORDE PLOMO */
+        background-color: transparent !important;
+        color: #555555 !important;
+        border: 1px solid #D1D5DB !important;
+    }
+
+    /* REEMPLAZA EL ROJO POR PLOMO CLARO AL INTERACTUAR */
+    div[data-testid="stHorizontalBlock"] .stButton > button:hover,
+    div[data-testid="stHorizontalBlock"] .stButton > button:focus,
+    div[data-testid="stHorizontalBlock"] .stButton > button:active {
+        background-color: #E5E7EB !important; /* Plomo claro sutil */
+        color: #111111 !important;
+        border-color: #9CA3AF !important;
+        box-shadow: none !important;
     }
     
     @media only screen and (max-width: 768px) {

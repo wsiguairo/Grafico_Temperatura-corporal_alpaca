@@ -3,6 +3,7 @@
 # Adaptación del código de Colab para Streamlit.
 # Mantiene INTACTO el diseño de la gráfica.
 # Agrega logo SENAMHI + botones de navegación.
+# Auto-refresh cada 60 segundos.
 # =========================================================
 
 import streamlit as st
@@ -646,6 +647,18 @@ def main():
             st.rerun()
 
     st.markdown("---")
+
+    # ============================================================
+    # AUTO-REFRESH CADA 60 SEGUNDOS (sin dependencias externas)
+    # ============================================================
+    @st.fragment(run_every=60)
+    def _auto_refresh():
+        # Limpia la caché para forzar la relectura de Google Sheets
+        st.cache_data.clear()
+        # Recarga la página completa con datos frescos
+        st.rerun()
+
+    _auto_refresh()
 
     # ============================================================
     # CARGAR DATOS

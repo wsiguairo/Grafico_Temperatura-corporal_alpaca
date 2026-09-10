@@ -18,6 +18,7 @@ import io
 import requests
 import base64
 from datetime import datetime, timedelta
+from streamlit_autorefresh import st_autorefresh
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -649,16 +650,9 @@ def main():
     st.markdown("---")
 
     # ============================================================
-    # AUTO-REFRESH CADA 60 SEGUNDOS (sin dependencias externas)
+    # AUTO-REFRESH CADA 60 SEGUNDOS
     # ============================================================
-    @st.fragment(run_every=60)
-    def _auto_refresh():
-        # Limpia la caché para forzar la relectura de Google Sheets
-        st.cache_data.clear()
-        # Recarga la página completa con datos frescos
-        st.rerun()
-
-    _auto_refresh()
+    st_autorefresh(interval=60 * 1000, key="auto_refresh_temp")
 
     # ============================================================
     # CARGAR DATOS

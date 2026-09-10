@@ -1,8 +1,9 @@
-# app_corporal.py - VERSIÓN STREAMLIT (adaptación del código de Colab)
+# Temperatura.py - VERSIÓN STREAMLIT (adaptación del código de Colab)
 # =========================================================
 # Código original de Google Colab adaptado para Streamlit.
 # Se mantiene INTACTO el diseño de la gráfica.
 # Único cambio visual: se agregó el logo SENAMHI.
+# CORREGIDO: TypeError en pd.to_numeric (columnas duplicadas)
 # =========================================================
 
 import streamlit as st
@@ -32,7 +33,7 @@ st.set_page_config(
 )
 
 # ============================================================
-# ESTILOS - LOGO SENAMHI (ÚNICO AGREGADO)
+# ESTILOS - LOGO SENAMHI
 # ============================================================
 st.markdown("""
 <style>
@@ -101,19 +102,19 @@ def mostrar_logo_senamhi():
             pass
 
 # ============================================================
-# URLS DE GOOGLE SHEETS (igual que el original)
+# URLS DE GOOGLE SHEETS
 # ============================================================
 URL_CORPORAL = 'https://docs.google.com/spreadsheets/d/1AktP7JsWWtndUpyug005IynsKGfhn-5O-qWowXwhqy4/edit?gid=2146945474#gid=2146945474'
 URL_CLIMA = 'https://docs.google.com/spreadsheets/d/1sftR-fLiB00xaA3HWZJocO4NI1daQ_24vYoiI3mNEuk/edit?gid=4165835#gid=4165835'
 
 # ============================================================
-# PARÁMETROS MANUALES DEL TÍTULO (igual que el original)
+# PARÁMETROS MANUALES DEL TÍTULO
 # ============================================================
 SHEET_NAME_CLIMA = 'Crucero_alto'
 DEPARTAMENTO = 'Puno'
 
 # ============================================================
-# FUNCIÓN PARA LEER GOOGLE SHEETS (igual que el original)
+# FUNCIÓN PARA LEER GOOGLE SHEETS
 # ============================================================
 @st.cache_data(ttl=60)
 def read_google_sheet(url, sheet_name=None):
@@ -142,7 +143,7 @@ def read_google_sheet(url, sheet_name=None):
         raise
 
 # ============================================================
-# FUNCIÓN PARA CONVERTIR FECHAS (igual que el original)
+# FUNCIÓN PARA CONVERTIR FECHAS
 # ============================================================
 def convertir_fecha_formato_especial(fecha_str):
     if pd.isna(fecha_str):
@@ -172,7 +173,7 @@ def convertir_fecha_formato_especial(fecha_str):
     return pd.NaT
 
 # ============================================================
-# LEGEND LABELS (igual que el original)
+# LEGEND LABELS
 # ============================================================
 legend_labels = {
     "temp_min": "Temperatura mínima", "vel_viento": "Velocidad Viento", "precipitacion": "Precipitación",
@@ -184,14 +185,14 @@ legend_labels = {
 }
 
 # ============================================================
-# FUNCIÓN PRINCIPAL DE LA GRÁFICA (INTACTA - sin write_html)
+# FUNCIÓN PRINCIPAL DE LA GRÁFICA
 # ============================================================
 def create_interactive_plot(df, cols, title, filename, primary_cols_list, secondary_cols_list,
                             zona_nombre="", departamento=""):
     # Crear figura con dos ejes Y
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-    # MAPA DE COLORES EXACTAMENTE IGUAL AL ORIGINAL
+    # MAPA DE COLORES
     color_map = {
         "temp_min": "blue", "vel_viento": "orange", "precipitacion": "purple",
         "temp_cria_hembra": "darkorange", "temp_cria_macho": "green",
@@ -219,7 +220,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                     secondary_y=False
                 )
 
-    # Línea horizontal en y=0 en el eje primario
+    # Línea horizontal en y=0
     fig.add_hline(
         y=0,
         line_dash="dash",
@@ -304,7 +305,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                             pass
 
     # ============================================================
-    # CONFIGURACIÓN DE ZOOM - 4 MESES CON EXTENSIÓN PARA DESLIZAR
+    # CONFIGURACIÓN DE ZOOM - 4 MESES CON EXTENSIÓN
     # ============================================================
     if not df['fecha'].empty:
         fecha_mas_reciente = df['fecha'].max().normalize()
@@ -328,7 +329,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             fecha_fin_zoom = df['fecha'].max()
 
     # ============================================================
-    # TICKS - EXTENDIDOS PARA INCLUIR EL MES FUTURO
+    # TICKS
     # ============================================================
     fecha_max_ticks = df['fecha'].max() + pd.DateOffset(months=1)
     fecha_min_ticks = df['fecha'].min()
@@ -384,7 +385,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             zeroline=False
         )
 
-    # Eje Y secundario (Temperatura corporal)
+    # Eje Y secundario
     fig.update_yaxes(
         title_text="Temperatura corporal (°C)",
         title_font=dict(size=20, color="black", family='DejaVu Sans'),
@@ -399,7 +400,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         side='right'
     )
 
-    # Configurar eje X con zoom y ticks
+    # Configurar eje X
     fig.update_xaxes(
         tickvals=tickvals,
         ticktext=ticktext,
@@ -416,7 +417,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
     )
 
     # ============================================================
-    # CONSTRUIR TÍTULO FINAL CON ZONA Y DEPARTAMENTO
+    # TÍTULO FINAL CON ZONA Y DEPARTAMENTO
     # ============================================================
     sufijo_titulo = ""
     if zona_nombre:
@@ -486,7 +487,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
     return fig
 
 # ============================================================
-# CARGA Y PROCESAMIENTO DE DATOS (igual que el original)
+# CARGA Y PROCESAMIENTO DE DATOS (VERSIÓN CORREGIDA)
 # ============================================================
 @st.cache_data(ttl=60)
 def cargar_y_procesar_datos():
@@ -494,66 +495,98 @@ def cargar_y_procesar_datos():
     df_clima = read_google_sheet(URL_CLIMA, sheet_name=SHEET_NAME_CLIMA)
     df_temp_corporal = read_google_sheet(URL_CORPORAL, sheet_name='grafX_corporal')
 
-    # Renombrar columnas climáticas
+    # ============================================================
+    # RENOMBRAR COLUMNAS - SOLO LA PRIMERA COINCIDENCIA
+    # ============================================================
     rename_clima = {}
+    patrones_usados = set()
     for col in df_clima.columns:
         col_lower = col.lower()
-        if 'temperatura minima' in col_lower or 'temperatura mínima' in col_lower:
+        if ('temperatura minima' in col_lower or 'temperatura mínima' in col_lower) and 'temperatura_minima' not in patrones_usados:
             rename_clima[col] = 'temperatura_minima'
-        elif 'velocidad de viento' in col_lower:
+            patrones_usados.add('temperatura_minima')
+        elif 'velocidad de viento' in col_lower and 'velocidad_viento' not in patrones_usados:
             rename_clima[col] = 'velocidad_viento'
-        elif 'precipitacion' in col_lower or 'precipitación' in col_lower:
+            patrones_usados.add('velocidad_viento')
+        elif ('precipitacion' in col_lower or 'precipitación' in col_lower) and 'precipitacion' not in patrones_usados:
             rename_clima[col] = 'precipitacion'
+            patrones_usados.add('precipitacion')
 
     if rename_clima:
         df_clima = df_clima.rename(columns=rename_clima)
 
-    # Renombrar columnas corporales
     rename_corporal = {}
+    patrones_usados = set()
     for col in df_temp_corporal.columns:
         col_lower = col.lower()
-        if 't_crias_hembra' in col_lower or 'temp_crias_hembra' in col_lower:
+        if ('t_crias_hembra' in col_lower or 'temp_crias_hembra' in col_lower) and 'temp_cria_hembra' not in patrones_usados:
             rename_corporal[col] = 'temp_cria_hembra'
-        elif 't_crias_macho' in col_lower or 'temp_crias_macho' in col_lower:
+            patrones_usados.add('temp_cria_hembra')
+        elif ('t_crias_macho' in col_lower or 'temp_crias_macho' in col_lower) and 'temp_cria_macho' not in patrones_usados:
             rename_corporal[col] = 'temp_cria_macho'
-        elif 't_adulto_hembra' in col_lower or 'temp_adulto_hembra' in col_lower:
+            patrones_usados.add('temp_cria_macho')
+        elif ('t_adulto_hembra' in col_lower or 'temp_adulto_hembra' in col_lower) and 'temp_adulto_hembra' not in patrones_usados:
             rename_corporal[col] = 'temp_adulto_hembra'
-        elif 't_adulto_macho' in col_lower or 'temp_adulto_macho' in col_lower:
+            patrones_usados.add('temp_adulto_hembra')
+        elif ('t_adulto_macho' in col_lower or 'temp_adulto_macho' in col_lower) and 'temp_adulto_macho' not in patrones_usados:
             rename_corporal[col] = 'temp_adulto_macho'
+            patrones_usados.add('temp_adulto_macho')
 
     if rename_corporal:
         df_temp_corporal = df_temp_corporal.rename(columns=rename_corporal)
 
-    # Convertir fechas
+    # ============================================================
+    # ELIMINAR COLUMNAS DUPLICADAS
+    # ============================================================
+    df_clima = df_clima.loc[:, ~df_clima.columns.duplicated()]
+    df_temp_corporal = df_temp_corporal.loc[:, ~df_temp_corporal.columns.duplicated()]
+
+    # ============================================================
+    # CONVERTIR FECHAS
+    # ============================================================
     if 'fecha' in df_clima.columns:
         df_clima['fecha'] = df_clima['fecha'].apply(convertir_fecha_formato_especial)
 
     if 'fecha' in df_temp_corporal.columns:
         df_temp_corporal['fecha'] = df_temp_corporal['fecha'].apply(convertir_fecha_formato_especial)
 
-    # Convertir a numérico
+    # ============================================================
+    # CONVERTIR A NUMÉRICO (verificando que sea Serie)
+    # ============================================================
     for col in ['temperatura_minima', 'velocidad_viento', 'precipitacion']:
         if col in df_clima.columns:
-            df_clima[col] = pd.to_numeric(df_clima[col], errors='coerce')
+            serie = df_clima[col]
+            if isinstance(serie, pd.DataFrame):
+                serie = serie.iloc[:, 0]
+            df_clima[col] = pd.to_numeric(serie, errors='coerce')
 
     for col in ['temp_cria_hembra', 'temp_cria_macho', 'temp_adulto_hembra', 'temp_adulto_macho']:
         if col in df_temp_corporal.columns:
-            df_temp_corporal[col] = pd.to_numeric(df_temp_corporal[col], errors='coerce')
+            serie = df_temp_corporal[col]
+            if isinstance(serie, pd.DataFrame):
+                serie = serie.iloc[:, 0]
+            df_temp_corporal[col] = pd.to_numeric(serie, errors='coerce')
 
-    # Calcular promedios
+    # ============================================================
+    # CALCULAR PROMEDIOS
+    # ============================================================
     if 'temp_cria_hembra' in df_temp_corporal.columns and 'temp_cria_macho' in df_temp_corporal.columns:
         df_temp_corporal['temp_cria'] = df_temp_corporal[['temp_cria_hembra', 'temp_cria_macho']].mean(axis=1)
 
     if 'temp_adulto_hembra' in df_temp_corporal.columns and 'temp_adulto_macho' in df_temp_corporal.columns:
         df_temp_corporal['temp_adulto'] = df_temp_corporal[['temp_adulto_hembra', 'temp_adulto_macho']].mean(axis=1)
 
-    # Unir DataFrames
+    # ============================================================
+    # UNIR DATAFRAMES
+    # ============================================================
     combined_df = pd.merge(df_clima, df_temp_corporal, on='fecha', how='outer')
     combined_df.sort_values(by='fecha', inplace=True)
     combined_df.drop_duplicates(subset=['fecha'], inplace=True)
     combined_df = combined_df[combined_df['fecha'].notna()]
 
-    # Detectar columnas
+    # ============================================================
+    # DETECTAR COLUMNAS
+    # ============================================================
     def detect_cols(df):
         cols = {}
         cols["temp_min"] = next((c for c in df.columns if 'temperatura_minima' in c), None)
@@ -583,7 +616,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # Navegación entre las 3 gráficas (reemplaza el menú HTML original)
+    # Navegación entre las 3 gráficas
     with st.sidebar:
         st.markdown("### 📊 Gráficas")
         grafica_opcion = st.radio(
@@ -604,7 +637,7 @@ def main():
         st.error("❌ No hay datos para generar gráficos. Verifica las hojas de Google Sheets.")
         return
 
-    # Zona y departamento (igual que el original)
+    # Zona y departamento
     zona_nombre = SHEET_NAME_CLIMA.replace('_', ' ').title()
 
     # Generar gráfica según selección

@@ -85,6 +85,11 @@ st.markdown("""
         padding: 8px 12px;
         transition: all 0.2s ease;
         line-height: 1.3;
+        
+        /* CAMBIO A PLOMO CLARO DIRECTO (REEMPLAZA AL ROJO) */
+        background-color: #D1D5DB !important; /* Plomo claro mate */
+        color: #1F2937 !important;            /* Texto oscuro para buen contraste */
+        border: 1px solid #9CA3AF !important; /* Borde plomo sutil */
     }
     
     @media only screen and (max-width: 768px) {

@@ -2,7 +2,7 @@
 # =========================================================
 # Adaptación del código de Colab para Streamlit.
 # Mantiene INTACTO el diseño de la gráfica.
-# Agrega logo SENAMHI + botones de navegación como el original.
+# Agrega logo SENAMHI + botones de navegación.
 # =========================================================
 
 import streamlit as st
@@ -31,7 +31,7 @@ st.set_page_config(
 )
 
 # ============================================================
-# ESTILOS - LOGO SENAMHI + BOTONES
+# ESTILOS - LOGO SENAMHI + BOTONES + TÍTULO PEQUEÑO
 # ============================================================
 st.markdown("""
 <style>
@@ -67,30 +67,24 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     
-    /* BOTONES DE NAVEGACIÓN */
-    .nav-buttons {
-        display: flex;
-        gap: 8px;
-        justify-content: center;
-        margin: 10px 0 15px 0;
-        flex-wrap: wrap;
+    /* TÍTULO "SELECCIONAR GRÁFICA" - PEQUEÑO Y SIN NEGRITA */
+    .titulo-seleccionar {
+        font-size: 13px;
+        font-weight: 400;
+        color: #555;
+        margin: 5px 0 8px 0;
+        text-align: left;
     }
     
     /* ESTILO DE BOTONES DE STREAMLIT */
     div[data-testid="stHorizontalBlock"] .stButton > button {
         width: 100%;
         border-radius: 8px;
-        font-weight: 600;
-        font-size: 14px;
-        padding: 10px 16px;
+        font-weight: 500;
+        font-size: 13px;
+        padding: 8px 12px;
         transition: all 0.2s ease;
-    }
-    
-    /* Botón activo */
-    .btn-activo button {
-        background-color: #2c7fb8 !important;
-        color: white !important;
-        border-color: #2c7fb8 !important;
+        line-height: 1.3;
     }
     
     @media only screen and (max-width: 768px) {
@@ -101,9 +95,12 @@ st.markdown("""
             padding: 3px;
             border-radius: 6px;
         }
-        div[data-testid="stHorizontalBlock"] .stButton > button {
+        .titulo-seleccionar {
             font-size: 12px;
-            padding: 8px 10px;
+        }
+        div[data-testid="stHorizontalBlock"] .stButton > button {
+            font-size: 11px;
+            padding: 6px 8px;
         }
     }
 </style>
@@ -493,7 +490,6 @@ def cargar_y_procesar_datos():
     df_clima = read_google_sheet(URL_CLIMA, sheet_name=SHEET_NAME_CLIMA)
     df_temp_corporal = read_google_sheet(URL_CORPORAL, sheet_name='grafX_corporal')
 
-    # Renombrar columnas - solo primera coincidencia
     rename_clima = {}
     patrones_usados = set()
     for col in df_clima.columns:
@@ -531,18 +527,15 @@ def cargar_y_procesar_datos():
     if rename_corporal:
         df_temp_corporal = df_temp_corporal.rename(columns=rename_corporal)
 
-    # Eliminar duplicados
     df_clima = df_clima.loc[:, ~df_clima.columns.duplicated()]
     df_temp_corporal = df_temp_corporal.loc[:, ~df_temp_corporal.columns.duplicated()]
 
-    # Convertir fechas
     if 'fecha' in df_clima.columns:
         df_clima['fecha'] = df_clima['fecha'].apply(convertir_fecha_formato_especial)
 
     if 'fecha' in df_temp_corporal.columns:
         df_temp_corporal['fecha'] = df_temp_corporal['fecha'].apply(convertir_fecha_formato_especial)
 
-    # Convertir a numérico
     for col in ['temperatura_minima', 'velocidad_viento', 'precipitacion']:
         if col in df_clima.columns:
             serie = df_clima[col]
@@ -557,14 +550,12 @@ def cargar_y_procesar_datos():
                 serie = serie.iloc[:, 0]
             df_temp_corporal[col] = pd.to_numeric(serie, errors='coerce')
 
-    # Calcular promedios
     if 'temp_cria_hembra' in df_temp_corporal.columns and 'temp_cria_macho' in df_temp_corporal.columns:
         df_temp_corporal['temp_cria'] = df_temp_corporal[['temp_cria_hembra', 'temp_cria_macho']].mean(axis=1)
 
     if 'temp_adulto_hembra' in df_temp_corporal.columns and 'temp_adulto_macho' in df_temp_corporal.columns:
         df_temp_corporal['temp_adulto'] = df_temp_corporal[['temp_adulto_hembra', 'temp_adulto_macho']].mean(axis=1)
 
-    # Unir
     combined_df = pd.merge(df_clima, df_temp_corporal, on='fecha', how='outer')
     combined_df.sort_values(by='fecha', inplace=True)
     combined_df.drop_duplicates(subset=['fecha'], inplace=True)
@@ -600,18 +591,19 @@ def main():
     """, unsafe_allow_html=True)
 
     # ============================================================
-    # BOTONES DE NAVEGACIÓN (como el original)
+    # BOTONES DE NAVEGACIÓN
     # ============================================================
     if 'grafica_seleccionada' not in st.session_state:
         st.session_state.grafica_seleccionada = 1
 
-    st.markdown("### 📊 Seleccionar gráfica:")
+    # Título pequeño y sin negrita
+    st.markdown('<div class="titulo-seleccionar">Seleccionar gráfica:</div>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
         if st.button(
-            "📊 Gráfica 1\nCrías machos y hembras",
+            "📊 Gráfica 1 · Crías m y h",
             use_container_width=True,
             type="primary" if st.session_state.grafica_seleccionada == 1 else "secondary",
             key="btn_g1"
@@ -621,7 +613,7 @@ def main():
 
     with col2:
         if st.button(
-            "📈 Gráfica 2\nAdultos machos y hembras",
+            "📈 Gráfica 2 · Adultos m y h",
             use_container_width=True,
             type="primary" if st.session_state.grafica_seleccionada == 2 else "secondary",
             key="btn_g2"
@@ -631,7 +623,7 @@ def main():
 
     with col3:
         if st.button(
-            "📉 Gráfica 3\nCrías y adultos",
+            "📉 Gráfica 3 · Crías y adultos",
             use_container_width=True,
             type="primary" if st.session_state.grafica_seleccionada == 3 else "secondary",
             key="btn_g3"

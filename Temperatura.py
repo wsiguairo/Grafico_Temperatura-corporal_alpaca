@@ -31,6 +31,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# AGREGA SOLO ESTA LÍNEA AQUÍ ABAJO:
+st.markdown("<script>window.parent.document.title = 'Gráfica Temperatura Corporal y Clima';</script>", unsafe_allow_html=True)
+
 # ESTILOS - LOGO SENAMHI + BOTONES + TÍTULO PEQUEÑO
 # ============================================================
 st.markdown("""

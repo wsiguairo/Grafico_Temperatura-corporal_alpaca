@@ -5,6 +5,7 @@
 # Agrega logo SENAMHI + botones de navegación.
 # AUTO-ACTUALIZACIÓN cada 60s SIN parpadeo (st.fragment).
 # ALTURA ADAPTATIVA PC / MÓVIL + BOTÓN DE ESTADÍSTICAS.
+# SIN BARRA LATERAL (sidebar oculto).
 # =========================================================
 
 import streamlit as st
@@ -29,7 +30,7 @@ st.set_page_config(
     page_title="Gráfica Temperatura Corporal y Clima",
     page_icon="🌡️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # VISUALIZA EN LA PESTAÑA EL TITULO
@@ -39,6 +40,12 @@ st.markdown("<script>window.parent.document.title = 'Gráfica Temperatura Corpor
 # ============================================================
 st.markdown("""
 <style>
+    /* OCULTAR BARRA LATERAL / DESLIZABLE */
+    section[data-testid="stSidebar"] { display: none !important; }
+    div[data-testid="stSidebarCollapsedControl"] { display: none !important; }
+    button[data-testid="stSidebarCollapseButton"] { display: none !important; }
+    [data-testid="collapsedControl"] { display: none !important; }
+
     .main .block-container {
         padding-top: 0.5rem !important;
         padding-bottom: 0rem !important;

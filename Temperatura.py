@@ -225,7 +225,7 @@ legend_labels = {
 }
 
 # ============================================================
-# FUNCIÓN PRINCIPAL DE LA GRÁFICA (INTACTA + ALTURA RESPONSIVE)
+# FUNCIÓN PRINCIPAL DE LA GRÁFICA (INTACTA + ALTURA AJUSTADA)
 # ============================================================
 def create_interactive_plot(df, cols, title, filename, primary_cols_list, secondary_cols_list,
                             zona_nombre="", departamento=""):
@@ -475,8 +475,8 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         template='plotly_white',
         autosize=True,
         width=None,
-        height=900,  # ✅ MÁS ALTO → ejes Y más alargados
-        margin=dict(l=50, r=50, t=70, b=180),
+        height=650,   # ✅ Altura fija moderada: ejes Y primario y secundario proporcionados
+        margin=dict(l=50, r=50, t=60, b=200),
         plot_bgcolor='white',
         dragmode='pan',
         hoverlabel=dict(

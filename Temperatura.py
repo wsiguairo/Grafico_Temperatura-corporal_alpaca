@@ -34,7 +34,7 @@ st.set_page_config(
 # VISUALIZA EN LA PESTAÑA EL TITULO
 st.markdown("<script>window.parent.document.title = 'Gráfica Temperatura Corporal y Clima';</script>", unsafe_allow_html=True)
 
-# ESTILOS - LOGO SENAMHI + BOTONES + TÍTULO PEQUEÑO
+# ESTILOS - LOGO SENAMHI + BOTONES + TÍTULO PEQUEÑO + ALTURA GRÁFICA ADAPTABLE
 # ============================================================
 st.markdown("""
 <style>
@@ -104,7 +104,21 @@ st.markdown("""
         border-color: #9CA3AF !important;
         box-shadow: none !important;
     }
-    
+
+    /* ============================================================
+       ALTURA ADAPTABLE DE LA GRÁFICA (evita achatamiento en PC y celular)
+       ============================================================ */
+    div[data-testid="stPlotlyChart"] {
+        width: 100% !important;
+        min-height: 520px !important;
+    }
+
+    div[data-testid="stPlotlyChart"] > div {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    /* Celular: altura proporcional, sin achatarse */
     @media only screen and (max-width: 768px) {
         .logo-senamhi {
             width: 55px;
@@ -119,6 +133,16 @@ st.markdown("""
         div[data-testid="stHorizontalBlock"] .stButton > button {
             font-size: 11px;
             padding: 6px 8px;
+        }
+        div[data-testid="stPlotlyChart"] {
+            min-height: 420px !important;
+        }
+    }
+
+    /* Pantallas grandes: altura mayor para ejes Y bien proporcionados */
+    @media only screen and (min-width: 1200px) {
+        div[data-testid="stPlotlyChart"] {
+            min-height: 620px !important;
         }
     }
 </style>
@@ -225,7 +249,7 @@ legend_labels = {
 }
 
 # ============================================================
-# FUNCIÓN PRINCIPAL DE LA GRÁFICA (INTACTA + ALTURA AJUSTADA)
+# FUNCIÓN PRINCIPAL DE LA GRÁFICA (INTACTA + ALTURA RESPONSIVE)
 # ============================================================
 def create_interactive_plot(df, cols, title, filename, primary_cols_list, secondary_cols_list,
                             zona_nombre="", departamento=""):
@@ -475,7 +499,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         template='plotly_white',
         autosize=True,
         width=None,
-        height=650,   # ✅ Altura fija moderada: ejes Y primario y secundario proporcionados
+        height=None,  # ✅ ALTURA RESPONSIVE (el CSS controla el contenedor)
         margin=dict(l=50, r=50, t=60, b=200),
         plot_bgcolor='white',
         dragmode='pan',

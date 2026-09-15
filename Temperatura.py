@@ -1,8 +1,9 @@
-# Temperatura.py - VERSIÓN Siguairo - STREAMLIT (botones de navegación + AUTO-REFRESH 60s optimizado)
+# Temperatura.py - VERSIÓN Siguairo - STREAMLIT (botones de navegación + AUTO-REFRESH 60s optimizado + RESPONSIVO + ESTADÍSTICAS)
 # =========================================================
 # Adaptación del código de Colab para Streamlit.
-# Mantiene INTACTO el diseño de la gráfica.
-# Agrega logo SENAMHI + botones de navegación.
+# Mantiene INTACTO el diseño y la lógica de la gráfica.
+# Ajusta dinámicamente altura, fuentes y márgenes para PC y Celular.
+# Agrega sección desplegable/botón con resumen de estadísticas por gráfica.
 # AUTO-ACTUALIZACIÓN cada 60s SIN parpadeo (st.fragment).
 # =========================================================
 
@@ -34,13 +35,13 @@ st.set_page_config(
 # VISUALIZA EN LA PESTAÑA EL TITULO
 st.markdown("<script>window.parent.document.title = 'Gráfica Temperatura Corporal y Clima';</script>", unsafe_allow_html=True)
 
-# ESTILOS - LOGO SENAMHI + BOTONES + TÍTULO PEQUEÑO
+# ESTILOS - LOGO SENAMHI + BOTONES + RESPONSIVIDAD CSS
 # ============================================================
 st.markdown("""
 <style>
     .main .block-container {
         padding-top: 0.5rem !important;
-        padding-bottom: 0rem !important;
+        padding-bottom: 0.5rem !important;
         max-width: 100% !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
@@ -107,18 +108,18 @@ st.markdown("""
     
     @media only screen and (max-width: 768px) {
         .logo-senamhi {
-            width: 55px;
+            width: 50px;
             top: 5px;
             left: 5px;
-            padding: 3px;
+            padding: 2px;
             border-radius: 6px;
         }
         .titulo-seleccionar {
-            font-size: 12px;
+            font-size: 11px;
         }
         div[data-testid="stHorizontalBlock"] .stButton > button {
-            font-size: 11px;
-            padding: 6px 8px;
+            font-size: 10px;
+            padding: 5px 6px;
         }
     }
 </style>
@@ -225,10 +226,10 @@ legend_labels = {
 }
 
 # ============================================================
-# FUNCIÓN PRINCIPAL DE LA GRÁFICA (INTACTA)
+# FUNCIÓN PRINCIPAL DE LA GRÁFICA (AJUSTADA PARA RESPONSIVIDAD)
 # ============================================================
 def create_interactive_plot(df, cols, title, filename, primary_cols_list, secondary_cols_list,
-                            zona_nombre="", departamento=""):
+                            zona_nombre="", departamento="", es_movil=False):
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     color_map = {
@@ -237,6 +238,15 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         "temp_cria": "darkorange", "temp_adulto_hembra": "darkorange",
         "temp_adulto_macho": "green", "temp_adulto": "darkgreen"
     }
+
+    # Parámetros adaptativos para móvil/laptop
+    font_title_size = 15 if es_movil else 20
+    font_axis_title_size = 13 if es_movil else 18
+    font_tick_size = 10 if es_movil else 13
+    font_legend_size = 11 if es_movil else 13
+    fig_height = 550 if es_movil else 750
+    margin_b = 180 if es_movil else 140
+    margin_lr = 35 if es_movil else 50
 
     for p in primary_cols_list:
         col_name = cols.get(p)
@@ -248,7 +258,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                         x=datos_validos['fecha'],
                         y=datos_validos[col_name],
                         name=legend_labels.get(p, col_name),
-                        line=dict(color=color_map.get(p), width=3),
+                        line=dict(color=color_map.get(p), width=2.5 if es_movil else 3),
                         mode='lines',
                         legendgroup='primary',
                         showlegend=True,
@@ -277,7 +287,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                         x=datos_validos['fecha'],
                         y=datos_validos[col_name],
                         name=legend_labels.get(s, col_name),
-                        line=dict(color=color_map.get(s), width=3),
+                        line=dict(color=color_map.get(s), width=2.5 if es_movil else 3),
                         mode='lines',
                         legendgroup='secondary',
                         showlegend=True,
@@ -360,8 +370,11 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
     date_range = pd.date_range(start=fecha_min_ticks, end=fecha_max_ticks, freq='MS')
     tickvals = list(date_range)
 
-    months_es = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    months_es = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'] if es_movil else [
+                 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+                 
     ticktext = [f"{months_es[d.month - 1]} {d.year}" for d in date_range]
 
     temp_min_col_name = cols.get("temp_min")
@@ -372,9 +385,9 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             max_val = datos_temp.max()
             padding = (max_val - min_val) * 0.1 if max_val > min_val else 1
             fig.update_yaxes(
-                title_text="Temperatura mínima (°C)",
-                title_font=dict(size=20, color="black", family='DejaVu Sans'),
-                tickfont=dict(size=14, color="black"),
+                title_text="Temp. mín (°C)" if es_movil else "Temperatura mínima (°C)",
+                title_font=dict(size=font_axis_title_size, color="black", family='DejaVu Sans'),
+                tickfont=dict(size=font_tick_size, color="black"),
                 range=[min_val - padding, max_val + padding],
                 secondary_y=False,
                 showline=True,
@@ -384,9 +397,9 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             )
         else:
             fig.update_yaxes(
-                title_text="Temperatura mínima (°C)",
-                title_font=dict(size=20, color="black", family='DejaVu Sans'),
-                tickfont=dict(size=14, color="black"),
+                title_text="Temp. mín (°C)" if es_movil else "Temperatura mínima (°C)",
+                title_font=dict(size=font_axis_title_size, color="black", family='DejaVu Sans'),
+                tickfont=dict(size=font_tick_size, color="black"),
                 range=[-15, 5],
                 secondary_y=False,
                 showline=True,
@@ -396,9 +409,9 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             )
     else:
         fig.update_yaxes(
-            title_text="Temperatura mínima (°C)",
-            title_font=dict(size=20, color="black", family='DejaVu Sans'),
-            tickfont=dict(size=14, color="black"),
+            title_text="Temp. mín (°C)" if es_movil else "Temperatura mínima (°C)",
+            title_font=dict(size=font_axis_title_size, color="black", family='DejaVu Sans'),
+            tickfont=dict(size=font_tick_size, color="black"),
             range=[-15, 5],
             secondary_y=False,
             showline=True,
@@ -408,9 +421,9 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         )
 
     fig.update_yaxes(
-        title_text="Temperatura corporal (°C)",
-        title_font=dict(size=20, color="black", family='DejaVu Sans'),
-        tickfont=dict(size=14, color="black"),
+        title_text="Temp. corporal (°C)" if es_movil else "Temperatura corporal (°C)",
+        title_font=dict(size=font_axis_title_size, color="black", family='DejaVu Sans'),
+        tickfont=dict(size=font_tick_size, color="black"),
         range=[34.0, 40.0],
         tickvals=[34.0, 34.5, 35.0, 35.5, 36.0, 36.5, 37.0, 37.5, 38.0, 38.5, 39.0, 39.5, 40.0],
         secondary_y=True,
@@ -424,8 +437,8 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
     fig.update_xaxes(
         tickvals=tickvals,
         ticktext=ticktext,
-        tickangle=0,
-        tickfont=dict(size=12, color="black"),
+        tickangle=-30 if es_movil else 0,
+        tickfont=dict(size=font_tick_size, color="black"),
         showline=True,
         linewidth=1,
         linecolor='black',
@@ -433,32 +446,32 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         rangeslider=dict(visible=False),
         fixedrange=False,
         title_text="Fecha",
-        title_font=dict(size=14, color="black")
+        title_font=dict(size=font_tick_size + 2, color="black")
     )
 
     sufijo_titulo = ""
     if zona_nombre:
         if departamento:
-            sufijo_titulo = f"  —  {zona_nombre} ({departamento})"
+            sufijo_titulo = f" — {zona_nombre} ({departamento})"
         else:
-            sufijo_titulo = f"  —  {zona_nombre}"
+            sufijo_titulo = f" — {zona_nombre}"
 
     titulo_final = f"{title}{sufijo_titulo}"
 
     fig.update_layout(
         title=dict(
             text=titulo_final,
-            font=dict(size=22, family='DejaVu Sans', color="black"),
+            font=dict(size=font_title_size, family='DejaVu Sans', color="black"),
             x=0.5,
             xanchor='center'
         ),
         legend=dict(
             orientation="h",
             yanchor="top",
-            y=-0.12,
+            y=-0.15 if es_movil else -0.12,
             xanchor="center",
             x=0.5,
-            font=dict(size=14, family='DejaVu Sans', color="black"),
+            font=dict(size=font_legend_size, family='DejaVu Sans', color="black"),
             bgcolor="white",
             bordercolor="black",
             borderwidth=1,
@@ -468,33 +481,22 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             itemdoubleclick="toggleothers",
             groupclick="toggleitem",
             valign='middle',
-            itemwidth=30,
-            tracegroupgap=15
+            itemwidth=25 if es_movil else 30,
+            tracegroupgap=10 if es_movil else 15
         ),
         hovermode='x unified',
         template='plotly_white',
         autosize=True,
         width=None,
-        height=750,
-        margin=dict(l=50, r=50, t=60, b=150),
+        height=fig_height,
+        margin=dict(l=margin_lr, r=margin_lr, t=55, b=margin_b),
         plot_bgcolor='white',
         dragmode='pan',
         hoverlabel=dict(
-            bgcolor="rgba(255, 255, 255, 0.8)",
-            font=dict(size=14, family='DejaVu Sans', color="black"),
+            bgcolor="rgba(255, 255, 255, 0.85)",
+            font=dict(size=font_tick_size + 1, family='DejaVu Sans', color="black"),
             bordercolor="rgba(0, 0, 0, 0.3)",
             namelength=-1
-        ),
-        yaxis2=dict(
-            side='right',
-            overlaying='y',
-            title_text="Temperatura corporal (°C)",
-            title_font=dict(size=18, color="black", family='DejaVu Sans'),
-            tickfont=dict(size=12, color="black"),
-            range=[34.0, 40.0],
-            showline=True,
-            linewidth=1,
-            linecolor='black'
         )
     )
 
@@ -597,6 +599,55 @@ def cargar_y_procesar_datos():
     return combined_df, cols
 
 # ============================================================
+# MOSTRAR ESTADÍSTICAS ORDENADAS Y SIMPLES
+# ============================================================
+def mostrar_estadisticas_resumen(df, cols, sec_keys):
+    with st.expander("📊 Ver resumen estadístico del gráfico actual", expanded=False):
+        st.markdown("<h4 style='text-align: center; color: #2B6CB0; font-size: 16px;'>📈 Resumen Estadístico Limpio</h4>", unsafe_allow_html=True)
+        
+        # Evaluar columnas activas en la gráfica actual
+        keys_a_evaluar = ["temp_min"] + sec_keys
+        
+        metrics_data = []
+        for k in keys_a_evaluar:
+            col_real = cols.get(k)
+            if col_real and col_real in df.columns:
+                datos = df[col_real].dropna()
+                if not datos.empty:
+                    nombre = legend_labels.get(k, col_real)
+                    val_min = datos.min()
+                    val_max = datos.max()
+                    val_prom = datos.mean()
+                    val_std = datos.std()
+                    metrics_data.append({
+                        "Variable": nombre,
+                        "Mínimo (°C)": f"{val_min:.2f}",
+                        "Máximo (°C)": f"{val_max:.2f}",
+                        "Promedio (°C)": f"{val_prom:.2f}",
+                        "Desv. Est.": f"{val_std:.2f}" if not pd.isna(val_std) else "0.00"
+                    })
+        
+        if metrics_data:
+            df_stats = pd.DataFrame(metrics_data)
+            
+            # Formato tarjetas responsivas (st.metric)
+            num_cols = min(len(metrics_data), 4)
+            columns = st.columns(num_cols)
+            for idx, item in enumerate(metrics_data):
+                with columns[idx % num_cols]:
+                    st.metric(
+                        label=item["Variable"],
+                        value=f'{item["Promedio (°C)"]} °C',
+                        delta=f'Min: {item["Mínimo (°C)"]} | Max: {item["Máximo (°C)"]}',
+                        delta_color="normal"
+                    )
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.dataframe(df_stats, use_container_width=True, hide_index=True)
+        else:
+            st.info("No hay suficientes datos numéricos para calcular las estadísticas.")
+
+# ============================================================
 # FRAGMENTO DE AUTO-REFRESH (SOLO ESTE TROZO SE RE-EJECUTA)
 # ============================================================
 @st.fragment(run_every="60s")
@@ -617,9 +668,18 @@ def main():
 
     st.markdown("""
     <div style="text-align: center; padding: 0.5rem 0;">
-        <h2 style="font-size: clamp(1.2rem, 4vw, 2rem);">🌡️ Temperatura Corporal y Clima - Alpacas</h2>
+        <h2 style="font-size: clamp(1.1rem, 3.5vw, 1.8rem); color: #1E293B;">🌡️ Temperatura Corporal y Clima - Alpacas</h2>
     </div>
     """, unsafe_allow_html=True)
+
+    # Selector sencillo de modo pantalla (automatización responsiva)
+    modo_pantalla = st.radio(
+        "📱 Dispositivo:",
+        options=["💻 PC / Laptop", "📱 Smartphone / Celular"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    es_movil = "Celular" in modo_pantalla
 
     # ============================================================
     # BOTONES DE NAVEGACIÓN
@@ -679,39 +739,46 @@ def main():
     # ============================================================
     # GENERAR GRÁFICA SEGÚN SELECCIÓN
     # ============================================================
+    sec_keys = []
     with st.spinner('📊 Generando gráfica interactiva...'):
         if st.session_state.grafica_seleccionada == 1:
+            sec_keys = ["temp_cria_hembra", "temp_cria_macho"]
             fig = create_interactive_plot(
                 df=combined_df,
                 cols=cols,
                 title="Gráfica 1. Influencia de las temperaturas mínimas en alpacas crías machos y hembras",
                 filename="grafica1.png",
                 primary_cols_list=["temp_min"],
-                secondary_cols_list=["temp_cria_hembra", "temp_cria_macho"],
+                secondary_cols_list=sec_keys,
                 zona_nombre=zona_nombre,
-                departamento=DEPARTAMENTO
+                departamento=DEPARTAMENTO,
+                es_movil=es_movil
             )
         elif st.session_state.grafica_seleccionada == 2:
+            sec_keys = ["temp_adulto_hembra", "temp_adulto_macho"]
             fig = create_interactive_plot(
                 df=combined_df,
                 cols=cols,
                 title="Gráfica 2. Influencia de las temperaturas mínimas en alpacas adultos machos y hembras",
                 filename="grafica2.png",
                 primary_cols_list=["temp_min"],
-                secondary_cols_list=["temp_adulto_hembra", "temp_adulto_macho"],
+                secondary_cols_list=sec_keys,
                 zona_nombre=zona_nombre,
-                departamento=DEPARTAMENTO
+                departamento=DEPARTAMENTO,
+                es_movil=es_movil
             )
         else:
+            sec_keys = ["temp_cria", "temp_adulto"]
             fig = create_interactive_plot(
                 df=combined_df,
                 cols=cols,
                 title="Gráfica 3. Influencia de las temperaturas mínimas en alpacas crías y adultos",
                 filename="grafica3.png",
                 primary_cols_list=["temp_min"],
-                secondary_cols_list=["temp_cria", "temp_adulto"],
+                secondary_cols_list=sec_keys,
                 zona_nombre=zona_nombre,
-                departamento=DEPARTAMENTO
+                departamento=DEPARTAMENTO,
+                es_movil=es_movil
             )
 
     # ============================================================
@@ -726,11 +793,13 @@ def main():
         })
 
     # ============================================================
+    # MOSTRAR BOTÓN / SECCIÓN DE ESTADÍSTICAS (DEBAJO DE LA LEYENDA)
+    # ============================================================
+    mostrar_estadisticas_resumen(combined_df, cols, sec_keys)
+
+    # ============================================================
     # AUTO-REFRESH CADA 60 SEGUNDOS (SIN PARPADEO)
     # ============================================================
-    # Este fragmento SOLO se re-ejecuta cada 60s.
-    # Limpia el caché para que en el siguiente ciclo los datos
-    # se vuelvan a descargar desde Google Sheets automáticamente.
     auto_refresh_60s()
 
     # Texto informativo (estático, sin contador por segundo)

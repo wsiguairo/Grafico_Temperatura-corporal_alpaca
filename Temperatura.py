@@ -325,7 +325,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                                 if datos_fecha[columnas_para_verificar].notna().any(axis=1).any():
                                     fig.add_vline(
                                         x=fecha_linea,
-                                        line_dash="dash",
+                                        line_dash="dot",
                                         line_color="gray",
                                         line_width=1,
                                         opacity=0.7,
@@ -380,7 +380,10 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                 showline=True,
                 linewidth=1,
                 linecolor='black',
-                zeroline=False
+                zeroline=False,
+                ticks="outside",
+                ticklen=6,
+                tickcolor='black'
             )
         else:
             fig.update_yaxes(
@@ -392,7 +395,10 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
                 showline=True,
                 linewidth=1,
                 linecolor='black',
-                zeroline=False
+                zeroline=False,
+                ticks="outside",
+                ticklen=6,
+                tickcolor='black'
             )
     else:
         fig.update_yaxes(
@@ -404,7 +410,10 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             showline=True,
             linewidth=1,
             linecolor='black',
-            zeroline=False
+            zeroline=False,
+            ticks="outside",
+            ticklen=6,
+            tickcolor='black'
         )
 
     fig.update_yaxes(
@@ -418,7 +427,10 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         linewidth=1,
         linecolor='black',
         zeroline=False,
-        side='right'
+        side='right',
+        ticks="outside",
+        ticklen=6,
+        tickcolor='black'
     )
 
     fig.update_xaxes(
@@ -433,7 +445,10 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         rangeslider=dict(visible=False),
         fixedrange=False,
         title_text="Fecha",
-        title_font=dict(size=14, color="black")
+        title_font=dict(size=14, color="black"),
+        ticks="outside",
+        ticklen=6,
+        tickcolor='black'
     )
 
     sufijo_titulo = ""
@@ -494,7 +509,10 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
             range=[34.0, 40.0],
             showline=True,
             linewidth=1,
-            linecolor='black'
+            linecolor='black',
+            ticks="outside",
+            ticklen=6,
+            tickcolor='black'
         )
     )
 

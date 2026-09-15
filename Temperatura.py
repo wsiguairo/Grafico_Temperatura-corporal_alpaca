@@ -475,8 +475,8 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         template='plotly_white',
         autosize=True,
         width=None,
-        height=None,  # ✅ ALTURA RESPONSIVE (se ajusta automáticamente)
-        margin=dict(l=50, r=50, t=60, b=200),
+        height=900,  # ✅ MÁS ALTO → ejes Y más alargados
+        margin=dict(l=50, r=50, t=70, b=180),
         plot_bgcolor='white',
         dragmode='pan',
         hoverlabel=dict(

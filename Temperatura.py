@@ -455,7 +455,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         legend=dict(
             orientation="h",
             yanchor="top",
-            y=-0.12,
+            y=-0.28,
             xanchor="center",
             x=0.5,
             font=dict(size=14, family='DejaVu Sans', color="black"),
@@ -476,7 +476,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         autosize=True,
         width=None,
         height=None,  # ✅ ALTURA RESPONSIVE (se ajusta automáticamente)
-        margin=dict(l=50, r=50, t=60, b=150),
+        margin=dict(l=50, r=50, t=60, b=200),
         plot_bgcolor='white',
         dragmode='pan',
         hoverlabel=dict(
@@ -610,7 +610,7 @@ def auto_refresh_60s():
     st.cache_data.clear()
 
 # ============================================================
-# FUNCIÓN DE ESTADÍSTICAS (NUEVA)
+# FUNCIÓN DE ESTADÍSTICAS
 # ============================================================
 def calcular_estadisticas(df, cols):
     """
@@ -774,7 +774,7 @@ def main():
         })
 
     # ============================================================
-    # ESTADÍSTICAS DESCRIPTIVAS (NUEVO - DEBAJO DE LA LEYENDA)
+    # ESTADÍSTICAS DESCRIPTIVAS (DEBAJO DE LA LEYENDA)
     # ============================================================
     with st.expander("📊 Ver estadísticas descriptivas de todas las variables", expanded=False):
         stats_df = calcular_estadisticas(combined_df, cols)

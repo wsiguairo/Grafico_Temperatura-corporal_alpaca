@@ -4,8 +4,6 @@
 # Mantiene INTACTO el diseño de la gráfica.
 # Agrega logo SENAMHI + botones de navegación.
 # AUTO-ACTUALIZACIÓN cada 60s SIN parpadeo (st.fragment).
-# ALTURA ADAPTATIVA PC / MÓVIL + BOTÓN DE ESTADÍSTICAS.
-# SIN BARRA LATERAL (sidebar oculto).
 # =========================================================
 
 import streamlit as st
@@ -30,7 +28,7 @@ st.set_page_config(
     page_title="Gráfica Temperatura Corporal y Clima",
     page_icon="🌡️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # VISUALIZA EN LA PESTAÑA EL TITULO
@@ -40,12 +38,6 @@ st.markdown("<script>window.parent.document.title = 'Gráfica Temperatura Corpor
 # ============================================================
 st.markdown("""
 <style>
-    /* OCULTAR BARRA LATERAL / DESLIZABLE */
-    section[data-testid="stSidebar"] { display: none !important; }
-    div[data-testid="stSidebarCollapsedControl"] { display: none !important; }
-    button[data-testid="stSidebarCollapseButton"] { display: none !important; }
-    [data-testid="collapsedControl"] { display: none !important; }
-
     .main .block-container {
         padding-top: 0.5rem !important;
         padding-bottom: 0rem !important;
@@ -128,6 +120,53 @@ st.markdown("""
             font-size: 11px;
             padding: 6px 8px;
         }
+    }
+
+    /* ===== ESTILOS PARA LA TABLA DE ESTADÍSTICAS ===== */
+    .stats-container {
+        background: #fafafa;
+        border: 1px solid #E5E7EB;
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin-top: 8px;
+    }
+    .stats-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+    .stats-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        font-family: 'DejaVu Sans', sans-serif;
+    }
+    .stats-table th {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 6px 8px;
+        border: 1px solid #E5E7EB;
+        text-align: center;
+        font-weight: 600;
+    }
+    .stats-table td {
+        padding: 5px 8px;
+        border: 1px solid #E5E7EB;
+        text-align: center;
+        color: #111827;
+    }
+    .stats-table tr:nth-child(even) {
+        background: #ffffff;
+    }
+    .stats-table tr:nth-child(odd) {
+        background: #f9fafb;
+    }
+    @media only screen and (max-width: 768px) {
+        .stats-table { font-size: 10px; }
+        .stats-table th, .stats-table td { padding: 3px 4px; }
+        .stats-title { font-size: 12px; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -233,7 +272,7 @@ legend_labels = {
 }
 
 # ============================================================
-# FUNCIÓN PRINCIPAL DE LA GRÁFICA (INTACTA)
+# FUNCIÓN PRINCIPAL DE LA GRÁFICA (INTACTA en diseño, solo altura responsiva)
 # ============================================================
 def create_interactive_plot(df, cols, title, filename, primary_cols_list, secondary_cols_list,
                             zona_nombre="", departamento=""):
@@ -483,7 +522,8 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         template='plotly_white',
         autosize=True,
         width=None,
-        height=None,
+        # ===== ALTURA RESPONSIVA (reducida y adaptable) =====
+        height=None,   # se ajusta por CSS abajo
         margin=dict(l=50, r=50, t=60, b=150),
         plot_bgcolor='white',
         dragmode='pan',
@@ -507,6 +547,42 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
     )
 
     return fig
+
+# ============================================================
+# FUNCIÓN PARA CALCULAR ESTADÍSTICAS ORDENADAS
+# ============================================================
+def calcular_estadisticas(df, cols, primary_cols_list, secondary_cols_list):
+    """
+    Devuelve un DataFrame con estadísticas descriptivas ordenadas
+    para las columnas usadas en la gráfica.
+    """
+    registros = []
+    orden = []
+
+    # Primero las primarias (ej. temp_min)
+    for key in primary_cols_list:
+        orden.append(key)
+    # Luego las secundarias (ej. temp_cria_hembra, temp_cria_macho)
+    for key in secondary_cols_list:
+        orden.append(key)
+
+    for key in orden:
+        col_name = cols.get(key)
+        if col_name and col_name in df.columns:
+            serie = pd.to_numeric(df[col_name], errors='coerce').dropna()
+            if not serie.empty:
+                registros.append({
+                    "Variable": legend_labels.get(key, col_name),
+                    "N": int(serie.count()),
+                    "Mín": round(serie.min(), 2),
+                    "Máx": round(serie.max(), 2),
+                    "Media": round(serie.mean(), 2),
+                    "Mediana": round(serie.median(), 2),
+                    "Desv. Est.": round(serie.std(), 2) if len(serie) > 1 else 0.0,
+                    "P25": round(serie.quantile(0.25), 2),
+                    "P75": round(serie.quantile(0.75), 2),
+                })
+    return pd.DataFrame(registros)
 
 # ============================================================
 # CARGA Y PROCESAMIENTO DE DATOS
@@ -618,6 +694,35 @@ def auto_refresh_60s():
     st.cache_data.clear()
 
 # ============================================================
+# FUNCIÓN PARA RENDERIZAR LA TABLA DE ESTADÍSTICAS
+# ============================================================
+def renderizar_tabla_estadisticas(stats_df):
+    """
+    Renderiza la tabla de estadísticas en HTML con estilo ordenado.
+    """
+    if stats_df is None or stats_df.empty:
+        st.info("ℹ️ No hay datos suficientes para calcular estadísticas.")
+        return
+
+    # Construir HTML
+    html = '<div class="stats-container">'
+    html += '<div class="stats-title">📊 Estadísticas descriptivas de las variables mostradas</div>'
+    html += '<table class="stats-table">'
+    html += '<thead><tr>'
+    for col in stats_df.columns:
+        html += f'<th>{col}</th>'
+    html += '</tr></thead><tbody>'
+
+    for _, row in stats_df.iterrows():
+        html += '<tr>'
+        for col in stats_df.columns:
+            html += f'<td>{row[col]}</td>'
+        html += '</tr>'
+
+    html += '</tbody></table></div>'
+    st.markdown(html, unsafe_allow_html=True)
+
+# ============================================================
 # MAIN
 # ============================================================
 def main():
@@ -689,90 +794,71 @@ def main():
     # ============================================================
     with st.spinner('📊 Generando gráfica interactiva...'):
         if st.session_state.grafica_seleccionada == 1:
+            primary_cols = ["temp_min"]
+            secondary_cols = ["temp_cria_hembra", "temp_cria_macho"]
             fig = create_interactive_plot(
                 df=combined_df,
                 cols=cols,
                 title="Gráfica 1. Influencia de las temperaturas mínimas en alpacas crías machos y hembras",
                 filename="grafica1.png",
-                primary_cols_list=["temp_min"],
-                secondary_cols_list=["temp_cria_hembra", "temp_cria_macho"],
+                primary_cols_list=primary_cols,
+                secondary_cols_list=secondary_cols,
                 zona_nombre=zona_nombre,
                 departamento=DEPARTAMENTO
             )
         elif st.session_state.grafica_seleccionada == 2:
+            primary_cols = ["temp_min"]
+            secondary_cols = ["temp_adulto_hembra", "temp_adulto_macho"]
             fig = create_interactive_plot(
                 df=combined_df,
                 cols=cols,
                 title="Gráfica 2. Influencia de las temperaturas mínimas en alpacas adultos machos y hembras",
                 filename="grafica2.png",
-                primary_cols_list=["temp_min"],
-                secondary_cols_list=["temp_adulto_hembra", "temp_adulto_macho"],
+                primary_cols_list=primary_cols,
+                secondary_cols_list=secondary_cols,
                 zona_nombre=zona_nombre,
                 departamento=DEPARTAMENTO
             )
         else:
+            primary_cols = ["temp_min"]
+            secondary_cols = ["temp_cria", "temp_adulto"]
             fig = create_interactive_plot(
                 df=combined_df,
                 cols=cols,
                 title="Gráfica 3. Influencia de las temperaturas mínimas en alpacas crías y adultos",
                 filename="grafica3.png",
-                primary_cols_list=["temp_min"],
-                secondary_cols_list=["temp_cria", "temp_adulto"],
+                primary_cols_list=primary_cols,
+                secondary_cols_list=secondary_cols,
                 zona_nombre=zona_nombre,
                 departamento=DEPARTAMENTO
             )
 
     # ============================================================
-    # CSS RESPONSIVO PARA LA ALTURA DE LA GRÁFICA (PC / TABLET / MÓVIL)
-    # ============================================================
-    st.markdown("""
-    <style>
-        /* Altura por defecto para PC */
-        div[data-testid="stPlotlyChart"] {
-            height: 620px !important;
-        }
-        div[data-testid="stPlotlyChart"] > div,
-        div[data-testid="stPlotlyChart"] .js-plotly-plot,
-        div[data-testid="stPlotlyChart"] .plot-container {
-            height: 620px !important;
-        }
-
-        /* Tablets */
-        @media only screen and (max-width: 1024px) {
-            div[data-testid="stPlotlyChart"],
-            div[data-testid="stPlotlyChart"] > div,
-            div[data-testid="stPlotlyChart"] .js-plotly-plot,
-            div[data-testid="stPlotlyChart"] .plot-container {
-                height: 500px !important;
-            }
-        }
-
-        /* Móviles */
-        @media only screen and (max-width: 768px) {
-            div[data-testid="stPlotlyChart"],
-            div[data-testid="stPlotlyChart"] > div,
-            div[data-testid="stPlotlyChart"] .js-plotly-plot,
-            div[data-testid="stPlotlyChart"] .plot-container {
-                height: 420px !important;
-            }
-        }
-
-        /* Móviles muy pequeños */
-        @media only screen and (max-width: 480px) {
-            div[data-testid="stPlotlyChart"],
-            div[data-testid="stPlotlyChart"] > div,
-            div[data-testid="stPlotlyChart"] .js-plotly-plot,
-            div[data-testid="stPlotlyChart"] .plot-container {
-                height: 360px !important;
-            }
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # ============================================================
-    # VISUALIZAR GRÁFICA
+    # VISUALIZAR GRÁFICA (con altura responsiva vía CSS)
     # ============================================================
     if fig is not None:
+        # Envolver en un contenedor con altura responsiva
+        st.markdown("""
+        <style>
+            .grafica-container {
+                width: 100%;
+                height: auto;
+                min-height: 280px;
+            }
+            .grafica-container .js-plotly-plot {
+                width: 100% !important;
+                height: auto !important;
+                min-height: 280px;
+            }
+            @media only screen and (max-width: 768px) {
+                .grafica-container .js-plotly-plot {
+                    min-height: 240px;
+                }
+            }
+        </style>
+        <div class="grafica-container">
+        """, unsafe_allow_html=True)
+
         st.plotly_chart(fig, use_container_width=True, config={
             'displayModeBar': True,
             'displaylogo': False,
@@ -780,89 +866,24 @@ def main():
             'responsive': True
         })
 
+        st.markdown("</div>", unsafe_allow_html=True)
+
     # ============================================================
-    # BOTÓN DE ESTADÍSTICAS (DEBAJO DE LA LEYENDA)
+    # ESTADÍSTICAS DEBAJO DE LA LEYENDA (CON UN CLIC)
     # ============================================================
-    with st.expander("📊 Ver estadísticas del período", expanded=False):
-        # Seleccionar columnas activas según la gráfica elegida
-        if st.session_state.grafica_seleccionada == 1:
-            cols_stats = ["temp_min", "temp_cria_hembra", "temp_cria_macho"]
-        elif st.session_state.grafica_seleccionada == 2:
-            cols_stats = ["temp_min", "temp_adulto_hembra", "temp_adulto_macho"]
-        else:
-            cols_stats = ["temp_min", "temp_cria", "temp_adulto"]
+    # Calcular estadísticas de las variables de la gráfica actual
+    stats_df = calcular_estadisticas(combined_df, cols, primary_cols, secondary_cols)
 
-        registros = []
-        for key in cols_stats:
-            col_name = cols.get(key)
-            if col_name and col_name in combined_df.columns:
-                serie = pd.to_numeric(combined_df[col_name], errors='coerce').dropna()
-                if not serie.empty:
-                    registros.append({
-                        "Variable": legend_labels.get(key, col_name),
-                        "Mín.": round(float(serie.min()), 2),
-                        "Máx.": round(float(serie.max()), 2),
-                        "Prom.": round(float(serie.mean()), 2),
-                        "Mediana": round(float(serie.median()), 2),
-                        "Desv.": round(float(serie.std()), 2) if serie.count() > 1 else 0.0,
-                        "N° datos": int(serie.count())
-                    })
-
-        if registros:
-            df_stats = pd.DataFrame(registros)
-
-            # ==========================================
-            # MÉTRICAS RÁPIDAS (RESUMEN VISUAL)
-            # ==========================================
-            st.markdown("##### 📌 Resumen rápido")
-
-            # Calcular métricas seguras
-            dias_con_datos = int(combined_df['fecha'].notna().sum())
-
-            temp_min_serie = pd.to_numeric(
-                combined_df[cols["temp_min"]], errors='coerce'
-            ).dropna() if cols.get("temp_min") and cols["temp_min"] in combined_df.columns else pd.Series(dtype=float)
-
-            tmin_baja = f"{temp_min_serie.min():.1f} °C" if not temp_min_serie.empty else "—"
-            tmin_alta = f"{temp_min_serie.max():.1f} °C" if not temp_min_serie.empty else "—"
-            tmin_prom = f"{temp_min_serie.mean():.1f} °C" if not temp_min_serie.empty else "—"
-
-            c1, c2, c3, c4 = st.columns(4)
-            with c1:
-                st.metric("📅 Días con datos", dias_con_datos)
-            with c2:
-                st.metric("🌡️ T° mín. más baja", tmin_baja)
-            with c3:
-                st.metric("🌡️ T° mín. más alta", tmin_alta)
-            with c4:
-                st.metric("📈 Prom. T° mínima", tmin_prom)
-
-            # ==========================================
-            # TABLA DETALLADA
-            # ==========================================
-            st.markdown("##### 📋 Detalle por variable")
-            st.dataframe(
-                df_stats,
-                use_container_width=True,
-                hide_index=True
-            )
-
-            # ==========================================
-            # PERÍODO ANALIZADO
-            # ==========================================
-            fecha_min = combined_df['fecha'].min()
-            fecha_max = combined_df['fecha'].max()
-            st.caption(
-                f"🗓️ Período analizado: "
-                f"{fecha_min.strftime('%d/%m/%Y')} → {fecha_max.strftime('%d/%m/%Y')} "
-                f"· Zona: {zona_nombre} ({DEPARTAMENTO})"
-            )
-        else:
-            st.info("ℹ️ No hay datos suficientes para calcular estadísticas.")
+    # Expander que se muestra/oculta con un clic
+    with st.expander("📊 Ver estadísticas descriptivas (clic para mostrar/ocultar)", expanded=False):
+        renderizar_tabla_estadisticas(stats_df)
 
     # ============================================================
     # AUTO-REFRESH CADA 60 SEGUNDOS (SIN PARPADEO)
     # ============================================================
+    # Este fragmento SOLO se re-ejecuta cada 60s.
+    # Limpia el caché para que en el siguiente ciclo los datos
+    # se vuelvan a descargar desde Google Sheets automáticamente.
     auto_refresh_60s()
 
     # Texto informativo (estático, sin contador por segundo)

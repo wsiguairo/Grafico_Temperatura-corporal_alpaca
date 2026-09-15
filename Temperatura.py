@@ -455,7 +455,7 @@ def create_interactive_plot(df, cols, title, filename, primary_cols_list, second
         legend=dict(
             orientation="h",
             yanchor="top",
-            y=-0.28,
+            y=-0.18,
             xanchor="center",
             x=0.5,
             font=dict(size=14, family='DejaVu Sans', color="black"),
